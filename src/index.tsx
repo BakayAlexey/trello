@@ -1,5 +1,10 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
+import { BrowserRouter as Router } from 'react-router-dom';
 import { App } from './components/App';
 
-ReactDOM.render(<App />, document.querySelector('#root'));
+ReactDOM.render(
+  <Router>
+    <App />
+  </Router>,
+  document.querySelector('#root'));

@@ -1,7 +1,10 @@
-import * as React from 'react';
+import React from 'react';
 import { getFromLocalStorage, setToLocalStorage } from '../../utils';
+import { RouteChildrenProps } from 'react-router';
+import { Switch, Route, Redirect, Link } from 'react-router-dom';
+import { routes, AppRoute } from './Routes';
+import { OAuth } from '../OAuth';
 
-const { REACT_APP_API_KEY, REACT_APP_APP_NAME, REACT_APP_REDIRECT_URL, REACT_APP_SCOPE } = process.env;
 const TOKEN_STORAGE_KEY = 'TOKEN';
 
 interface Board {
@@ -22,30 +25,16 @@ export class App extends React.Component<any, AppState> {
     boards: [],
   };
 
-  private async setToken(token: string) {
+  private setToken = (token: string) => {
     this.setState({token});
-    await setToLocalStorage(TOKEN_STORAGE_KEY, token);
-  }
-
-  private async getToken() {
-    const token = await getFromLocalStorage(TOKEN_STORAGE_KEY);
-    return token;
-  }
-
-  private isLoggetIn() {
-    return !!this.state.token;
-  }
-
-  private getTokenFromUrl() {
-    return window.location.hash.split('=')[1];
-  }
+  };
 
   private renderHeader() {
-    const requestUrl = `https://trello.com/1/authorize?return_url=${REACT_APP_REDIRECT_URL}&expiration=1day&name=${REACT_APP_APP_NAME}&scope=${REACT_APP_SCOPE}&response_type=token&key=${REACT_APP_API_KEY}`;
-
     return (
       <header>
-        {this.isLoggetIn() ? 'Hello user' : <a href={requestUrl}>Login with trello account</a>}
+        {routes.map(({path, title, isHidden}: AppRoute, i: number) => (
+          isHidden ? null : <Link key={i} to={path}>{title}</Link>
+        ))}
       </header>
     );
   }
@@ -53,17 +42,21 @@ export class App extends React.Component<any, AppState> {
   private renderContent() {
     return (
       <main>
-        {this.isLoggetIn() ? <h2>Some secret content</h2> : 'Please log in!'}
+        <Switch>
+          {routes.map(({path, render, exact}: AppRoute, i: number) => (
+            <Route
+              key={i}
+              path={path}
+              render={(props) => render({...props, token: this.state.token})}
+              exact={exact} />
+          ))}
+          <Route path="/oauth" render={(props:RouteChildrenProps) => <OAuth {...props} onSetToken={this.setToken} />} />
+          <Redirect to="/404" />
+        </Switch>
+        <h2>Test</h2>
       </main>
     );
   }
-
-  public componentDidMount() {
-    // const savedToken = await this.getToken();
-    const newToken = this.getTokenFromUrl();
-    this.setToken(newToken);
-  }
-
 
   public render() {
     return (
